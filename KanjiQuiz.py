@@ -1,4 +1,4 @@
-from pywebio import start_server
+from flask import Flask
 from pywebio.input import select, input, checkbox, TEXT, SELECT
 from pywebio.output import put_text, put_buttons, put_markdown, put_error, use_scope, put_html
 from pywebio.session import hold
@@ -423,5 +423,11 @@ def main():
     put_buttons(['Modalità Notte/Giorno'], onclick=toggle_dark_mode)    
     hold()
 
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return main()
+
 if __name__ == "__main__":
-    start_server(main, debug=True, port=8080)
+    app.run(host='0.0.0.0', debug=True, port=8080)
