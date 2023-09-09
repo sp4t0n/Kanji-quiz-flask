@@ -12,6 +12,8 @@ class QuizApp:
     def __init__(self):
         self.initialize_variables()
         self.load_quiz_data()
+        self.wrong_answers = []
+        self.showing_errors = False
 
     def initialize_variables(self):
         self.quiz_categories = []
@@ -211,11 +213,29 @@ class QuizApp:
                 put_text("Risposta esatta! ✅")
             else:
                 put_html(f"<div><span style='color: red;'>Risposta errata!</span> ❌<br><span style='color: blue;'>La domanda era:</span> '{question_text}'.<br><span style='color: green;'>La risposta corretta era:</span> {correct_answer}.</div>")
-
+                # Memorizza la domanda, la risposta corretta e la risposta fornita
+                self.wrong_answers.append({
+                    'question': question_text,
+                    'correct_answer': correct_answer,
+                    'given_answer': selected_option  # Aggiunto per memorizzare la risposta fornita
+                })
         self.total_questions += 1
         self.update_score()
         self.next_question()
 
+    def show_error_recap(self):
+        with use_scope('errors', clear=True):  # Usa un nuovo scope per gli errori
+            if not self.showing_errors:
+                for error in self.wrong_answers:
+                    put_html(f"<span style='color: blue;'>Domanda:</span> {error['question']}<br>")
+                    put_html(f"<span style='color: green;'>Risposta corretta:</span> {error['correct_answer']}<br>")
+                    put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
+                    put_markdown("---")
+                self.showing_errors = True
+            else:
+                self.showing_errors = False
+    
+    
     def get_correct_answer(self):
         if self.quiz_direction == 'kanji to meaning':
             correct_answer = self.current_quiz['meaning']
@@ -237,9 +257,9 @@ class QuizApp:
         with use_scope('score', clear=True):
             correct_percentage = (self.correct_answers / self.total_questions) * 100 if self.total_questions else 0
             wrong_percentage = 100 - correct_percentage
-            
+                        
             progress_bar = f"""
-            <div style="background-color: #f3f3f3; border-radius: 10px; padding: 3px;">
+            <div style="background-color: #f3f3f3; border-radius: 10px; padding: 3px;" onclick="show_error_recap()">
                 <div style="display: flex; align-items: center; justify-content: center;">
                     <div style="width: {correct_percentage}%; background-color: #4CAF50; text-align: center; padding: 10px 0; border-radius: 8px;">
                         {self.correct_answers}
@@ -257,6 +277,10 @@ class QuizApp:
         self.correct_answers = 0
         self.total_questions = 0
         self.update_score()
+        self.wrong_answers = []  # Aggiunto per eliminare gli errori salvati
+        self.showing_errors = False  # Aggiunto per nascondere gli errori mostrati
+        with use_scope('errors', clear=True):  # Aggiunto per pulire l'area degli errori
+            pass
 
     def switch_mode(self):
         if self.quiz_direction == 'kanji to meaning':
@@ -379,7 +403,7 @@ def main():
     with use_scope('feedback', clear=True):
         pass
 
-    put_buttons(['Resetta Punteggio', 'Mostra/Nascondi Romaji'], onclick=[reset_button_click, quiz_app.toggle_romaji])
+    put_buttons(['Resetta Punteggio/Errori', 'Mostra/Nascondi Romaji', 'Mostra/Nascondi Errori'], onclick=[quiz_app.reset_score, quiz_app.toggle_romaji, quiz_app.show_error_recap])  # Rinominato il pulsante in "Mostra/Nascondi Errori"
     put_markdown("---")
     put_text("🛠️ Impostazioni:")
     with use_scope('settings_buttons'):
@@ -435,4 +459,3 @@ def main():
 
 if __name__ == "__main__":
     start_server(main, host='0.0.0.0', debug=True, port=80)
-
