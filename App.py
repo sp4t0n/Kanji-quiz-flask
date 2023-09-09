@@ -233,7 +233,7 @@ class QuizApp:
         with use_scope('errors', clear=True):  # Usa un nuovo scope per gli errori
             if not self.showing_errors:
                 for error in self.wrong_answers:
-                    if self.direction == "kanji_to_romaji":
+                    if self.quiz_direction == "kanji to meaning":
                         question_with_romaji = f"{error['question']} ({error['romaji']})"
                         put_html(f"<span style='color: blue;'>Domanda:</span> {question_with_romaji}<br>")
                     else:
