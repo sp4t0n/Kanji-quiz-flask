@@ -406,16 +406,26 @@ def main():
 
     dark_mode_css = """
     <style>
-        /* Stile di base (modalità giorno) */
-        body {
-            transition: background-color 0.3s, color 0.3s;  /* Aggiunge una transizione fluida */
-        }
-
-        /* Stile per la modalità notte */
+        /* Stili per la modalità scura */
         body.dark-mode {
             background-color: #121212;
             color: white;
         }
+        
+        /* Stile per input-container in modalità scura */
+        body.dark-mode #input-container {
+            background-color: #121212;  /* Scegli un colore di sfondo appropriato */
+            /* Aggiungi altri stili se necessario */
+        }
+
+        /* Stile per .card e i suoi figli in modalità scura */
+        body.dark-mode .card, 
+        body.dark-mode .card * {
+            background-color: #121212;  /* Scegli un colore di sfondo appropriato */
+            color: white;  /* Imposta il colore del testo a bianco */
+        }
+
+        /* Aggiungi altri stili per la modalità scura qui */
     </style>
     """
     put_html(dark_mode_css)
