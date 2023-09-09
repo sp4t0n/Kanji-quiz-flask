@@ -207,18 +207,21 @@ class QuizApp:
         with use_scope('feedback', clear=True):
             correct_answer = self.get_correct_answer()
             question_text = self.get_question_text()
+            romaji = self.get_romaji()  # Ottieni il romaji associato
 
             if selected_option == correct_answer:
                 self.correct_answers += 1
                 put_text("Risposta esatta! ✅")
             else:
                 put_html(f"<div><span style='color: red;'>Risposta errata!</span> ❌<br><span style='color: blue;'>La domanda era:</span> '{question_text}'.<br><span style='color: green;'>La risposta corretta era:</span> {correct_answer}.</div>")
-                # Memorizza la domanda, la risposta corretta e la risposta fornita
+                # Memorizza la domanda, la risposta corretta, la risposta fornita e il romaji
                 self.wrong_answers.append({
                     'question': question_text,
                     'correct_answer': correct_answer,
-                    'given_answer': selected_option  # Aggiunto per memorizzare la risposta fornita
+                    'given_answer': selected_option,
+                    'romaji': romaji  # Memorizza il romaji
                 })
+
         self.total_questions += 1
         self.update_score()
         self.next_question()
@@ -227,8 +230,13 @@ class QuizApp:
         with use_scope('errors', clear=True):  # Usa un nuovo scope per gli errori
             if not self.showing_errors:
                 for error in self.wrong_answers:
-                    put_html(f"<span style='color: blue;'>Domanda:</span> {error['question']}<br>")
-                    put_html(f"<span style='color: green;'>Risposta corretta:</span> {error['correct_answer']}<br>")
+                    if self.direction == "kanji_to_romaji":
+                        question_with_romaji = f"{error['question']} ({error['romaji']})"
+                        put_html(f"<span style='color: blue;'>Domanda:</span> {question_with_romaji}<br>")
+                    else:
+                        correct_answer_with_romaji = f"{error['correct_answer']} ({error['romaji']})"
+                        put_html(f"<span style='color: blue;'>Domanda:</span> {error['question']}<br>")
+                        put_html(f"<span style='color: green;'>Risposta corretta:</span> {correct_answer_with_romaji}<br>")
                     put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
                     put_markdown("---")
                 self.showing_errors = True
