@@ -226,6 +226,9 @@ class QuizApp:
         self.update_score()
         self.next_question()
 
+    def get_romaji(self):
+        return self.current_quiz['romaji']
+
     def show_error_recap(self):
         with use_scope('errors', clear=True):  # Usa un nuovo scope per gli errori
             if not self.showing_errors:
