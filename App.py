@@ -1,10 +1,12 @@
 from pywebio import start_server
+from pywebio import config
 from pywebio.input import select, input, checkbox, TEXT, SELECT
 from pywebio.output import put_text, put_buttons, put_markdown, put_error, use_scope, put_html
 from pywebio.session import hold
 from openpyxl import Workbook, load_workbook
 import os
 import random
+
 
 DATA_FILE = "quiz_data.xlsx"
 
@@ -215,40 +217,41 @@ class QuizApp:
             else:
                 put_html(f"<div><span style='color: red;'>Risposta errata!</span> ❌<br><span style='color: blue;'>La domanda era:</span> '{question_text}'.<br><span style='color: green;'>La risposta corretta era:</span> {correct_answer}.</div>")
                 # Memorizza la domanda, la risposta corretta, la risposta fornita e il romaji
-                self.wrong_answers.append({
-                    'question': question_text,
-                    'correct_answer': correct_answer,
-                    'given_answer': selected_option,
-                    'romaji': romaji  # Memorizza il romaji
-                })
+                if self.quiz_direction == "kanji to meaning":
+                    self.wrong_answers.append({
+                        'question': f"{question_text} ({romaji})",  # Aggiungi romaji qui
+                        'correct_answer': correct_answer,
+                        'given_answer': selected_option
+                    })
+                else:
+                    self.wrong_answers.append({
+                        'question': question_text,
+                        'correct_answer': f"{correct_answer} ({romaji})",  # Aggiungi romaji qui
+                        'given_answer': selected_option
+                    })
 
-        self.total_questions += 1
-        self.update_score()
-        self.next_question()
+            self.total_questions += 1
+            self.update_score()
+            self.next_question()
+
 
     def get_romaji(self):
         return self.current_quiz['romaji']
+
 
     def show_error_recap(self):
         with use_scope('errors', clear=True):  # Usa un nuovo scope per gli errori
             if not self.showing_errors:
                 for error in self.wrong_answers:
-                    if self.quiz_direction == "kanji to meaning":
-                        question_with_romaji = f"{error['question']} ({error['romaji']})"
-                        put_html(f"<span style='color: blue;'>Domanda:</span> {question_with_romaji}<br>")
-                        put_html(f"<span style='color: green;'>Risposta corretta:</span> {error['correct_answer']}<br>")
-                        put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
-                    else:
-                        put_html(f"<span style='color: blue;'>Domanda:</span> {error['question']}<br>")
-                        correct_answer_with_romaji = f"{error['correct_answer']} ({error['romaji']})"
-                        put_html(f"<span style='color: green;'>Risposta corretta:</span> {correct_answer_with_romaji}<br>")
-                        put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
+                    put_html(f"<span style='color: blue;'>Domanda:</span> {error['question']}<br>")
+                    put_html(f"<span style='color: green;'>Risposta corretta:</span> {error['correct_answer']}<br>")
+                    put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
                     put_markdown("---")
                 self.showing_errors = True
             else:
                 self.showing_errors = False
-    
-    
+
+        
     def get_correct_answer(self):
         if self.quiz_direction == 'kanji to meaning':
             correct_answer = self.current_quiz['meaning']
@@ -399,76 +402,105 @@ class QuizApp:
             else:
                 put_error('Errore: Inserisci sia il kanji che il significato.')
 
+    def reload_page(self, _=None):
+        put_html("<script>location.reload();</script>")
+
+
+    def select_theme(self, btn_val=None):
+        theme_options = ["dark", "sketchy", "minty", "yeti", "default"]
+        selected_theme = select("Seleziona un tema", options=theme_options)
+        self.apply_theme(selected_theme)
+
+    def apply_theme(self, theme_name):
+        config(theme=theme_name)
+        self.reload_page()
+
 
 def main():
+    """Kanji Quiz"""
+    
+    # Nascondi il footer
+    hide_footer()
+
     quiz_app = QuizApp()
+    
+    # Mostra il titolo e le categorie
+    display_intro(quiz_app)
+
+    # Mostra lo score
+    display_score(quiz_app)
+
+    # Mostra i pulsanti delle azioni principali
+    display_main_actions(quiz_app)
+
+    # Mostra i pulsanti delle impostazioni
+    display_settings(quiz_app)
+
+    # Mostra i pulsanti per la modifica dei dati
+    display_edit_actions(quiz_app)
+
+    # Mostra il pulsante per cambiare il tema
+    display_theme_selector(quiz_app)
+    
+    hold()
+
+def hide_footer():
+    put_html("""
+    <style>
+        .footer {
+            display: none;
+        }
+    </style>
+    """)
+
+def display_intro(quiz_app):
     put_markdown("# Benvenuto a Kanji Quiz!")
     quiz_app.show_category_checkboxes()
-    
     put_markdown("---")
-    
-    def reset_button_click():
-        quiz_app.reset_score()
 
+def display_score(quiz_app):
     with use_scope('score'):
         quiz_app.update_score()
-
     with use_scope('feedback', clear=True):
         pass
-
-    put_buttons(['Resetta Punteggio/Errori', 'Mostra/Nascondi Romaji', 'Mostra/Nascondi Errori'], onclick=[quiz_app.reset_score, quiz_app.toggle_romaji, quiz_app.show_error_recap])  # Rinominato il pulsante in "Mostra/Nascondi Errori"
     put_markdown("---")
+
+def display_main_actions(quiz_app):
+    put_text("🔄")
+    put_buttons([
+        dict(label='Resetta Punteggio/Errori', value='reset_score', color='warning'),
+        dict(label='Mostra/Nascondi Romaji', value='toggle_romaji', color='secondary'),
+        dict(label='Mostra/Nascondi Errori', value='show_errors', color='secondary')
+    ], onclick=[quiz_app.reset_score, quiz_app.toggle_romaji, quiz_app.show_error_recap])
+    put_markdown("---")
+
+def display_settings(quiz_app):
     put_text("🛠️ Impostazioni:")
     with use_scope('settings_buttons'):
-        put_buttons(['Cambia modalità', 'Quiz Successivo', 'Cambia categorie'], onclick=[quiz_app.switch_mode, quiz_app.next_question, quiz_app.show_category_checkboxes])
-                
+        put_buttons([
+            dict(label='Cambia modalità', value='switch_mode', color='info'),
+            dict(label='Quiz Successivo', value='next_question', color='success'),
+            dict(label='Cambia categorie', value='change_categories', color='info')
+        ], onclick=[quiz_app.switch_mode, quiz_app.next_question, quiz_app.show_category_checkboxes])
     put_markdown("---")
+
+def display_edit_actions(quiz_app):
     put_text("🗄️ Edit:")
     with use_scope('edit_buttons'):
-        put_buttons(['Aggiungi Categoria', 'Modifica categoria', 'Aggiungi Quiz', 'Modifica Quiz'], onclick=[quiz_app.add_category, quiz_app.edit_category, quiz_app.add_quiz, quiz_app.edit_quiz])        
-    
+        put_buttons([
+            dict(label='Aggiungi Categoria', value='add_category', color='success'),
+            dict(label='Modifica categoria', value='edit_category', color='danger'),
+            dict(label='Aggiungi Quiz', value='add_quiz', color='success'),
+            dict(label='Modifica Quiz', value='edit_quiz', color='danger')
+        ], onclick=[quiz_app.add_category, quiz_app.edit_category, quiz_app.add_quiz, quiz_app.edit_quiz], small=True)        
     put_markdown("---")
-    
-    def toggle_dark_mode(btn_val=None):
-        # Usa JavaScript per aggiungere/rimuovere la classe "dark-mode" al body
-        toggle_js = """
-        if (document.body.classList.contains('dark-mode')) {
-            document.body.classList.remove('dark-mode');
-        } else {
-            document.body.classList.add('dark-mode');
-        }
-        """
-        put_html(f"<script>{toggle_js}</script>")
+
+def display_theme_selector(quiz_app):
+    put_buttons([
+        dict(label='Seleziona Tema', value='select_theme', color='info')
+    ], onclick=quiz_app.select_theme, outline=True)
 
 
-    dark_mode_css = """
-    <style>
-        /* Stili per la modalità scura */
-        body.dark-mode {
-            background-color: #121212;
-            color: white;
-        }
-        
-        /* Stile per input-container in modalità scura */
-        body.dark-mode #input-container {
-            background-color: #121212;  /* Scegli un colore di sfondo appropriato */
-            /* Aggiungi altri stili se necessario */
-        }
-
-        /* Stile per .card e i suoi figli in modalità scura */
-        body.dark-mode .card, 
-        body.dark-mode .card * {
-            background-color: #121212;  /* Scegli un colore di sfondo appropriato */
-            color: white;  /* Imposta il colore del testo a bianco */
-        }
-
-        /* Aggiungi altri stili per la modalità scura qui */
-    </style>
-    """
-    put_html(dark_mode_css)
-    
-    put_buttons(['Modalità Notte/Giorno'], onclick=toggle_dark_mode)    
-    hold()
 
 if __name__ == "__main__":
     start_server(main, host='0.0.0.0', debug=True, port=80)
