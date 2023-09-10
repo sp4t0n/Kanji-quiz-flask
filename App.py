@@ -235,16 +235,13 @@ class QuizApp:
                 for error in self.wrong_answers:
                     if self.quiz_direction == "kanji to meaning":
                         question_with_romaji = f"{error['question']} ({error['romaji']})"
-                        correct_answer_with_romaji = f"{error['correct_answer']} ({error['romaji']})"
                         put_html(f"<span style='color: blue;'>Domanda:</span> {question_with_romaji}<br>")
-                        put_html(f"<span style='color: green;'>Risposta corretta:</span> {correct_answer_with_romaji}<br>")
+                        put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
                     else:
-                        question_text = error['question']
+                        put_html(f"<span style='color: blue;'>Domanda:</span> {error['question']}<br>")
                         correct_answer_with_romaji = f"{error['correct_answer']} ({error['romaji']})"
-                        put_html(f"<span style='color: blue;'>Domanda:</span> {question_text}<br>")
                         put_html(f"<span style='color: green;'>Risposta corretta:</span> {correct_answer_with_romaji}<br>")
-                    
-                    put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
+                        put_html(f"<span style='color: red;'>Risposta fornita:</span> {error['given_answer']}<br>")
                     put_markdown("---")
                 self.showing_errors = True
             else:
