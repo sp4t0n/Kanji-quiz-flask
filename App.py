@@ -1,7 +1,7 @@
 from pywebio import start_server
 from pywebio import config
 from pywebio.input import select, input, checkbox, TEXT, SELECT
-from pywebio.output import put_text, put_buttons, put_markdown, put_error, use_scope, put_html
+from pywebio.output import put_text, put_buttons, put_markdown, put_error, use_scope, put_html, put_image
 from pywebio.session import hold
 from openpyxl import Workbook, load_workbook
 import os
@@ -273,15 +273,30 @@ class QuizApp:
         with use_scope('score', clear=True):
             correct_percentage = (self.correct_answers / self.total_questions) * 100 if self.total_questions else 0
             wrong_percentage = 100 - correct_percentage
-                        
+
+            # Se non ci sono domande, rendi la barra trasparente e non mostrare il testo
+            if self.total_questions == 0:
+                put_html('<div style="height: 40px; border-radius: 15px;"></div>')  # Barra vuota
+                return
+
+            # Testo per la percentuale di risposte corrette
+            correct_text = f"{self.correct_answers}"
+            if correct_percentage > 0:
+                correct_text += f" ({correct_percentage:.1f}%)"
+
+            # Testo per la percentuale di risposte errate
+            wrong_text = f"{self.total_questions - self.correct_answers}"
+            if wrong_percentage > 0:
+                wrong_text += f" ({wrong_percentage:.1f}%)"
+
             progress_bar = f"""
-            <div style="background-color: #f3f3f3; border-radius: 10px; padding: 3px;" onclick="show_error_recap()">
-                <div style="display: flex; align-items: center; justify-content: center;">
-                    <div style="width: {correct_percentage}%; background-color: #4CAF50; text-align: center; padding: 10px 0; border-radius: 8px;">
-                        {self.correct_answers}
+            <div style="background-color: #f3f3f3; border-radius: 15px; padding: 3px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);" onclick="show_error_recap()">
+                <div style="display: flex; align-items: center; justify-content: center; transition: width 0.3s ease;">
+                    <div style="width: {correct_percentage}%; background: linear-gradient(to right, #4CAF50, #8BC34A); text-align: center; padding: 10px 0; border-radius: 12px; transition: width 0.3s ease;">
+                        {correct_text}
                     </div>
-                    <div style="width: {wrong_percentage}%; background-color: #FF5733; text-align: center; padding: 10px 0; border-radius: 8px;">
-                        {self.total_questions - self.correct_answers}
+                    <div style="width: {wrong_percentage}%; background: linear-gradient(to right, #FF5733, #FFC107); text-align: center; padding: 10px 0; border-radius: 12px; transition: width 0.3s ease;">
+                        {wrong_text}
                     </div>
                 </div>
             </div>
@@ -454,9 +469,12 @@ def hide_footer():
     """)
 
 def display_intro(quiz_app):
-    put_markdown("# Benvenuto a Kanji Quiz!")
+    with open("Logo.png", "rb") as f:
+        img_content = f.read()
+    put_image(img_content, format="png", width="300px")  # Puoi regolare la larghezza come preferisci
     quiz_app.show_category_checkboxes()
     put_markdown("---")
+
 
 def display_score(quiz_app):
     with use_scope('score'):
