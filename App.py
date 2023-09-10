@@ -279,15 +279,12 @@ class QuizApp:
                 put_html('<div style="height: 40px; border-radius: 15px;"></div>')  # Barra vuota
                 return
 
-            # Testo per la percentuale di risposte corrette
+            # Testo per il numero di risposte corrette
             correct_text = f"{self.correct_answers}"
-            if correct_percentage > 0:
-                correct_text += f" ({correct_percentage:.1f}%)"
 
-            # Testo per la percentuale di risposte errate
-            wrong_text = f"{self.total_questions - self.correct_answers}"
-            if wrong_percentage > 0:
-                wrong_text += f" ({wrong_percentage:.1f}%)"
+            # Testo per il numero di risposte errate
+            wrong_answers = self.total_questions - self.correct_answers
+            wrong_text = f"{wrong_answers}" if wrong_answers > 0 else ""
 
             progress_bar = f"""
             <div style="background-color: #f3f3f3; border-radius: 15px; padding: 3px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);" onclick="show_error_recap()">
@@ -302,6 +299,8 @@ class QuizApp:
             </div>
             """
             put_html(progress_bar)
+
+
 
 
     def reset_score(self):
